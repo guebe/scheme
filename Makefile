@@ -1,5 +1,5 @@
 
-CFLAGS = -Wall -Wextra -Werror -g0 -o1
+CFLAGS = -Wall -Wextra -Werror -O3 -fjump-tables
 
 all: scheme
 

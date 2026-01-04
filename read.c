@@ -136,15 +136,21 @@ static double scm_strtod(const char *buf)
 	return d;
 }
 
+static void scm_skip_comment(void)
+{
+	int c;
+	while (((c = scm_getc()) != EOF) && !scm_line_ending(c));
+}
+
 static int scm_skip_whitespace(void)
 {
-	int c, c1;
+	int c;
 	while (1) {
 		c = scm_getc();
 		if (scm_whitespace(c))
 			continue;
 		else if (c == ';')
-       			while (((c1 = scm_getc()) != EOF) && !scm_line_ending(c));
+       			scm_skip_comment();
 		else
 			return c;
 	}
@@ -306,24 +312,30 @@ double scm_read_expr(void)
 {
 	int c;
 
-	c = scm_skip_whitespace();
+	while (1) {
+		c = scm_getc();
 
-	if (c == '(')
-	       	return scm_read_sexp();
-	else if (c == '"')
-	       	return scm_read_string();
-	else if (c == '\'')
-	       	return scm_read_quote();
-	else if (c == '#')
-	       	return scm_read_sharp();
-	else if (c == '+' || c == '-')
-		return scm_read_sign(c);
-	else if (scm_digit(c))
-	       	return scm_read_number_digit(c);
-	else if (scm_initial(c))
-	       	return scm_read_symbol(c);
-	else if (c == EOF)
-		exit(EXIT_SUCCESS);
-	else
-	       	errx(EXIT_FAILURE, "read: unexpected %c", c);
+		if (scm_whitespace(c))
+			continue;
+		else if (c == ';')
+			scm_skip_comment();
+		else if (c == '(')
+		       	return scm_read_sexp();
+		else if (c == '"')
+		       	return scm_read_string();
+		else if (c == '\'')
+		       	return scm_read_quote();
+		else if (c == '#')
+		       	return scm_read_sharp();
+		else if (c == '+' || c == '-')
+			return scm_read_sign(c);
+		else if (scm_digit(c))
+		       	return scm_read_number_digit(c);
+		else if (scm_initial(c))
+		       	return scm_read_symbol(c);
+		else if (c == EOF)
+			exit(EXIT_SUCCESS);
+		else
+		       	errx(EXIT_FAILURE, "read: unexpected %c", c);
+	}
 }
