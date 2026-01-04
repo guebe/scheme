@@ -38,17 +38,17 @@ static size_t scm_i = 0;
 static inline double scm_box(unsigned int tag, uint64_t value)
 {
 	double d;
-       	value = ((0xfff8ULL | (((uint64_t)tag) & 0x7ULL)) << 48U)
-	       	| (value & SCM_VALUE_MASK);
-       	memcpy(&d, &value, sizeof(d));
+	value = ((0xfff8ULL | (((uint64_t)tag) & 0x7ULL)) << 48U)
+		| (value & SCM_VALUE_MASK);
+	memcpy(&d, &value, sizeof(d));
 	return d;
 }
 
 static inline uint64_t scm_unbox(double d)
 {
-       	uint64_t u;
-       	memcpy(&u, &(d), sizeof(u));
-       	return u;
+	uint64_t u;
+	memcpy(&u, &(d), sizeof(u));
+	return u;
 }
 
 static inline double scm_cons(double a, double b)
@@ -83,8 +83,8 @@ static int scm_char_buffer = EOF;
 static inline int scm_getc(void)
 {
 	if (scm_char_buffer != EOF) {
-	       	int c = scm_char_buffer;
-	       	scm_char_buffer = EOF;
+		int c = scm_char_buffer;
+		scm_char_buffer = EOF;
 		return c;
 	}
 	return getchar();
@@ -104,7 +104,7 @@ static void scm_scan_token(char *buf, size_t size)
 		buf[i++] = c;
 
 	if (i >= size)
-	       	errx(EXIT_FAILURE, "read: token too long");
+		errx(EXIT_FAILURE, "read: token too long");
 
 	buf[i] = 0;
 	scm_ungetc(c);
@@ -150,7 +150,7 @@ static int scm_skip_whitespace(void)
 		if (scm_whitespace(c))
 			continue;
 		else if (c == ';')
-       			scm_skip_comment();
+			scm_skip_comment();
 		else
 			return c;
 	}
@@ -159,7 +159,7 @@ static int scm_skip_whitespace(void)
 static double scm_read_boolean(int c)
 {
 	int c1;
-       
+
 	c1 = scm_getc();
 	if (c1 == EOF || scm_delimiter(c1)) {
 		scm_ungetc(c1);
@@ -196,7 +196,7 @@ static double scm_read_number_radix(int radix)
 
 	if (radix == 10)
 		return scm_strtod(buf);
-	else	
+	else
 		return scm_strtol(buf, radix);
 }
 
@@ -240,7 +240,7 @@ static double scm_read_sexp(void)
 {
 	int c;
 	double tmp, head, last, tail, nil;
-	
+
   	tmp = scm_read_expr();
 	nil = scm_box(SCM_NIL, 0);
 	head = last = scm_cons(tmp, nil);
@@ -271,7 +271,7 @@ static double scm_read_string(void)
 {
 	size_t start, i;
 	int c;
-       
+
 	start = scm_i;
 	i = start * 8U;
 
@@ -279,7 +279,7 @@ static double scm_read_string(void)
 		((uint8_t*)scm_cell)[i++] = c;
 
 	if (((i + 1)/ 8) >= SCM_CELL_NUM)
-	       	errx(EXIT_FAILURE, "read: string too long");
+		errx(EXIT_FAILURE, "read: string too long");
 
 	((uint8_t*)scm_cell)[i] = 0;
 	return scm_box(SCM_STRING, start);
@@ -289,11 +289,11 @@ static double scm_read_quote(void)
 {
 	return scm_cons(0, 0);
 }
-		       	
+
 static double scm_read_symbol(char c)
 {
 	return scm_box(SCM_SYMBOL, c);
-} 
+}
 
 static double scm_read_sign(char c)
 {
@@ -320,22 +320,22 @@ double scm_read_expr(void)
 		else if (c == ';')
 			scm_skip_comment();
 		else if (c == '(')
-		       	return scm_read_sexp();
+			return scm_read_sexp();
 		else if (c == '"')
-		       	return scm_read_string();
+			return scm_read_string();
 		else if (c == '\'')
-		       	return scm_read_quote();
+			return scm_read_quote();
 		else if (c == '#')
-		       	return scm_read_sharp();
+			return scm_read_sharp();
 		else if (c == '+' || c == '-')
 			return scm_read_sign(c);
 		else if (scm_digit(c))
-		       	return scm_read_number_digit(c);
+			return scm_read_number_digit(c);
 		else if (scm_initial(c))
-		       	return scm_read_symbol(c);
+			return scm_read_symbol(c);
 		else if (c == EOF)
 			exit(EXIT_SUCCESS);
 		else
-		       	errx(EXIT_FAILURE, "read: unexpected %c", c);
+			errx(EXIT_FAILURE, "read: unexpected %c", c);
 	}
 }
