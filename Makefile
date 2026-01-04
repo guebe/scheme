@@ -10,5 +10,5 @@ clean:
 	rm -f scheme *.o
 
 main.o: main.c read.h
-read.o: read.c read.h
+read.o: read.c read.h box.h
 
