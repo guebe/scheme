@@ -278,9 +278,9 @@ static double scm_read_symbol(char c)
 	size_t len;
 
 	buf[0] = c;
-	len = scm_scan_token(buf, sizeof(buf));
+	len = scm_scan_token(buf + 1, sizeof(buf) - 1);
 
-	return scm_make_symbol(buf, len);
+	return scm_make_symbol(buf, len+1);
 }
 
 static double scm_read_sign(char c)
@@ -290,8 +290,8 @@ static double scm_read_sign(char c)
 
 	buf[0] = c;
 	len = scm_scan_token(buf + 1, sizeof(buf) - 1);
-	if (len == 1)
-		return scm_make_symbol(buf, len);
+	if (len == 0)
+		return scm_make_symbol(buf, 2);
 	else if (scm_digit(buf[1]))
 		return scm_strtod(buf);
 	else
