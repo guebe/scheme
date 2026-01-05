@@ -15,9 +15,11 @@ read.o: read.c read.h box.h cell.h pair.h
 display.o: display.c display.h box.h cell.h
 cell.o: cell.c cell.h
 
-.PHONY: test
+.PHONY: test scheme
 test: test_read.test
 
+# 1. test against a golden reference file
+# 2. test round-trip invariant
 %.test: %.scm
 	./scheme < $< > $*.out
 	diff $*.ref $*.out
