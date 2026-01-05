@@ -28,36 +28,20 @@ static inline int scm_letter(int c) { return (c >= 'a' && c <= 'z') || (c >= 'A'
 static inline int scm_special_initial(int c) { return c == '!' || c == '$' || c == '%' || c == '&' || c == '*' || c == '/' || c == ':' || c == '<' || c == '=' || c == '>' || c == '?' || c == '^' || c == '_' || c == '~'; }
 static inline int scm_initial(int c) { return scm_letter(c) || scm_special_initial(c); }
 
-static int scm_char_buffer = EOF;
-
-static inline int scm_getc(void)
-{
-	if (scm_char_buffer != EOF) {
-		int c = scm_char_buffer;
-		scm_char_buffer = EOF;
-		return c;
-	}
-	return getchar();
-}
-
-static inline void scm_ungetc(int c)
-{
-	scm_char_buffer = c;
-}
-
 static size_t scm_scan_token(char *buf, size_t size)
 {
 	size_t i = 0;
 	int c;
 
-	while (((c = scm_getc()) != EOF) && !scm_delimiter(c) && (i < size))
+	while (((c = scm_peek_char()) != EOF) && !scm_delimiter(c) && (i < size)) {
+		scm_read_char();
 		buf[i++] = c;
+	}
 
 	if (i >= size)
 		errx(EXIT_FAILURE, "read: token too long");
 
 	buf[i] = 0;
-	scm_ungetc(c);
 	return i;
 }
 
@@ -66,7 +50,7 @@ static size_t scm_scan_string(char *buf, size_t size)
 	size_t i = 0;
 	int c;
 
-	while (((c = scm_getc()) != EOF) && (c != '"') && (i < size))
+	while (((c = scm_read_char()) != EOF) && (c != '"') && (i < size))
 		buf[i++] = c;
 
 	if (i >= size)
@@ -105,16 +89,18 @@ static double scm_strtod(const char *buf)
 static void scm_skip_comment(void)
 {
 	int c;
-	while (((c = scm_getc()) != EOF) && !scm_line_ending(c));
+	while (((c = scm_read_char()) != EOF) && !scm_line_ending(c));
 }
 
 static int scm_skip_whitespace(void)
 {
 	int c;
 	while (1) {
-		c = scm_getc();
-		if (scm_whitespace(c))
+		c = scm_peek_char();
+		if (scm_whitespace(c)) {
+			scm_read_char();
 			continue;
+		}
 		else if (c == ';')
 			scm_skip_comment();
 		else
@@ -126,9 +112,8 @@ static double scm_read_boolean(int c)
 {
 	int c1;
 
-	c1 = scm_getc();
+	c1 = scm_read_char();
 	if (c1 == EOF || scm_delimiter(c1)) {
-		scm_ungetc(c1);
 		if (c == 't')
 			return scm_box(SCM_BOOLEAN, 1);
 		else if (c == 'f')
@@ -142,11 +127,11 @@ static double scm_read_character(void)
 {
 	int c, c1;
 
-	c = scm_getc();
+	c = scm_read_char();
 	if (c == EOF)
 		errx(EXIT_FAILURE, "read: unexpected EOF after #\\");
 
-	c1 = scm_getc();
+	c1 = scm_read_char();
 	if (c1 == EOF || scm_delimiter(c1))
 		return scm_box(SCM_CHARACTER, c);
 
@@ -169,7 +154,7 @@ static double scm_read_number_radix(int radix)
 
 static double scm_read_sharp(void)
 {
-	int c = scm_getc();
+	int c = scm_read_char();
 
 	if (c == 'f' || c == 't')
 		return scm_read_boolean(c);
@@ -216,27 +201,31 @@ static double scm_read_list(void)
 	nil = scm_box(SCM_NIL, 0);
 
 	c = scm_skip_whitespace();
-	if (c == ')')
+	if (c == ')') {
+		(void) scm_read_char();
 		return nil;
+	}
 
-	scm_ungetc(c);
   	tmp = scm_read();
 	head = last = scm_cons(tmp, nil);
 
 	while (1) {
 		c = scm_skip_whitespace();
 
-		if (c == ')')
+		if (c == ')') {
+			(void) scm_read_char();
 			return head;
+		}
 		else if (c == '.') {
+			(void) scm_read_char();
 			scm_set_cdr(last, scm_read());
 			c = scm_skip_whitespace();
 			if (c != ')')
 				errx(EXIT_FAILURE, "read: missing )");
+			(void) scm_read_char();
 			return head;
 		}
 		else {
-			scm_ungetc(c);
 			tmp = scm_read();
 			tail = scm_cons(tmp, nil);
 			scm_set_cdr(last, tail);
@@ -295,7 +284,7 @@ extern double scm_read(void)
 	int c;
 
 	while (1) {
-		c = scm_getc();
+		c = scm_read_char();
 
 		if (scm_whitespace(c))
 			continue;

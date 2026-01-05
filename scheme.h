@@ -70,6 +70,29 @@ static inline void scm_set_cdr(double a, double b)
 	scm_cell[i+1] = b;
 }
 
+static inline int scm_read_char(void)
+{
+	int c;
+
+	if (scm_peek_buffer != EOF) {
+		c = scm_peek_buffer;
+		scm_peek_buffer = EOF;
+	} else {
+		c = getchar();
+	}
+
+	return c;
+}
+
+static inline int scm_peek_char(void)
+{
+	if (scm_peek_buffer == EOF) {
+		scm_peek_buffer = getchar();
+	}
+
+	return scm_peek_buffer;
+}
+
 extern void scm_display(double obj);
 extern void scm_newline(void);
 extern double scm_read(void);

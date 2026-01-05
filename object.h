@@ -70,4 +70,6 @@ static inline size_t scm_cell_put(const char *buf, size_t size) {
 	return SCM_CELL_NUM;
 }
 
+static int scm_peek_buffer = EOF;
+
 #endif

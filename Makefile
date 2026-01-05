@@ -1,15 +1,14 @@
 
-CFLAGS = -Wall -Wextra -Werror -O3 -fjump-tables -fsanitize=address,undefined
-#CFLAGS = -Wall -Wextra -Werror -g -O0
+CFLAGS = -Wall -Wextra -Werror -O3 -fjump-tables
+#CFLAGS = -Wall -Wextra -Werror -g -O0 -fsanitize=address,undefined
 
 all: scheme
 
+scheme: display.c object.h read.c scheme.h scheme.c
+	$(CC) $(CFLAGS) -o $@ scheme.c
+
 clean:
-	rm -f scheme *.o *.out
-
-scheme: scheme.c
-
-scheme.c: display.c object.h read.c scheme.h
+	rm -f scheme *.out
 
 test: scheme test_read.test fuzz
 
