@@ -1,5 +1,5 @@
 
-CFLAGS = -Wall -Wextra -Werror -O3 -fjump-tables
+CFLAGS = -Wall -Wextra -Werror -O3 -fjump-tables -fsanitize=address,undefined
 #CFLAGS = -Wall -Wextra -Werror -g -O0
 
 all: scheme
@@ -15,8 +15,7 @@ read.o: read.c read.h box.h cell.h pair.h
 display.o: display.c display.h box.h cell.h
 cell.o: cell.c cell.h
 
-.PHONY: test scheme
-test: test_read.test
+test: test_read.test fuzz scheme
 
 # 1. test against a golden reference file
 # 2. test round-trip invariant
@@ -27,3 +26,5 @@ test: test_read.test
 	./scheme < $*.scm.out > $*.scm.out.out
 	diff $*.out $*.scm.out.out
 
+fuzz:
+	./fuzz.sh
