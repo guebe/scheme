@@ -1,311 +1,237 @@
-/* (c) guenter.ebermann@htl-hl.ac.at
- * Tiny Scheme Interpreter
- *
- * Recursive descent parser
- * exports the read procedure
- */
+/* (c) guenter.ebermann@htl-hl.ac.at */
 
-#if 0
-#define CLOS 6U /* closure - idx to cell with pair variables . body in env - a user defined function */
-#define PRIM 7U /* primitive - idx to func ptr table - special forms - control evaluation - the primitive itself (callee) evaluates its arguments according to special rules */
-#define PROC 8U /* procedure - idx to func ptr table - builtins - eval args then apply procedure - the caller already evaluated all arguments - the callee takes already evaluated arguments */
-/* symbol table: list of strings key = symbol index (a b c) (cons a (cons b (cons c '()))) */
-double symbols;
-/* environments: list of list of pairs (symbol index . value|procedure) (((a . 3) (b . proc)) ((a . 5) (b . 8)) */
-double env;
-#endif
+#include "scheme.h"
+#include <stdio.h>
 
-#define SCM_TOKEN_SIZE 128U /* size of buffer in bytes used to read tokens */
-#define SCM_STRING_SIZE 512U /* size of buffer in bytes used to read strings */
+#define SCM_TOKEN_SIZE  128
+#define SCM_STRING_SIZE 512
 
 /* R7RS, section 7.1.1, Lexical structure */
-static inline int scm_line_ending(int c) { return c == '\r' || c == '\n'; }
-static inline int scm_whitespace(int c) { return c == ' ' || c == '\t' || scm_line_ending(c); }
-static inline int scm_delimiter(int c) { return scm_whitespace(c) || c == '|' || c == '(' || c == ')' || c == '"' || c == ';'; }
-static inline int scm_digit(int c) { return c >= '0' && c <= '9'; }
-static inline int scm_letter(int c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); }
-static inline int scm_special_initial(int c) { return c == '!' || c == '$' || c == '%' || c == '&' || c == '*' || c == '/' || c == ':' || c == '<' || c == '=' || c == '>' || c == '?' || c == '^' || c == '_' || c == '~'; }
-static inline int scm_initial(int c) { return scm_letter(c) || scm_special_initial(c); }
+static inline _Bool is_line_ending(int c) { return c == '\r' || c == '\n'; }
+static inline _Bool is_whitespace(int c) { return c == ' ' || c == '\t' || is_line_ending(c); }
+static inline _Bool is_delimiter(int c) { return is_whitespace(c) || c == '|' || c == '(' || c == ')' || c == '"' || c == ';'; }
+static inline _Bool is_digit(int c) { return c >= '0' && c <= '9'; }
+static inline _Bool is_letter(int c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); }
+static inline _Bool is_special_initial(int c) { return c == '!' || c == '$' || c == '%' || c == '&' || c == '*' || c == '/' || c == ':' || c == '<' || c == '=' || c == '>' || c == '?' || c == '^' || c == '_' || c == '~'; }
+static inline _Bool is_initial(int c) { return is_letter(c) || is_special_initial(c); }
+static inline _Bool is_explicit_sign(int c) { return c == '+' || c == '-'; }
 
-static size_t scm_scan_token(char *buf, size_t size)
-{
-	size_t i = 0;
-	int c;
-
-	while (((c = scm_peek_char()) != EOF) && !scm_delimiter(c) && (i < size)) {
-		scm_read_char();
-		buf[i++] = c;
-	}
-
-	if (i >= size)
-		errx(EXIT_FAILURE, "read: token too long");
-
-	buf[i] = 0;
-	return i;
-}
-
-static size_t scm_scan_string(char *buf, size_t size)
-{
-	size_t i = 0;
-	int c;
-
-	while (((c = scm_read_char()) != EOF) && (c != '"') && (i < size))
-		buf[i++] = c;
-
-	if (i >= size)
-		errx(EXIT_FAILURE, "read: string too long");
-
-	buf[i] = 0;
-	return i;
-}
-
-static double scm_strtol(const char *buf, int base)
-{
-	char *end;
-	errno = 0;
-	long v = strtol(buf, &end, base);
-
-	if (end == buf)	errx(EXIT_FAILURE, "read: nothing parsed");
-	if (*end != '\0') errx(EXIT_FAILURE, "read: trailing garbage %s", buf);
-	if (errno != 0)	err(EXIT_FAILURE, "read");
-
-	return v;
-}
-
-static double scm_strtod(const char *buf)
-{
-	char *end;
-	errno = 0;
-	double d = strtod(buf, &end);
-
-	if (end == buf)	errx(EXIT_FAILURE, "read: nothing parsed");
-	if (*end != '\0') errx(EXIT_FAILURE, "read: trailing garbage %s", buf);
-	if (errno != 0) err(EXIT_FAILURE, "read");
-
-	return d;
-}
-
-static void scm_skip_comment(void)
+static void skip_comment(void)
 {
 	int c;
-	while (((c = scm_read_char()) != EOF) && !scm_line_ending(c));
+	while (((c = scm_read_char()) != EOF) && !is_line_ending(c));
 }
 
-static int scm_skip_whitespace(void)
-{
-	int c;
-	while (1) {
-		c = scm_peek_char();
-		if (scm_whitespace(c)) {
-			scm_read_char();
-			continue;
-		}
-		else if (c == ';')
-			scm_skip_comment();
-		else
-			return c;
-	}
-}
-
-static double scm_read_boolean(int c)
+static scm_obj_t read_boolean(int c)
 {
 	int c1;
 
 	c1 = scm_read_char();
-	if (c1 == EOF || scm_delimiter(c1)) {
-		if (c == 't')
-			return scm_box(SCM_BOOLEAN, 1);
-		else if (c == 'f')
-			return scm_box(SCM_BOOLEAN, 0);
+	if (c1 == EOF || is_delimiter(c1)) {
+		if (c == 't') return scm_true();
+		else if (c == 'f') return scm_false();
 	}
 
-	errx(EXIT_FAILURE, "read: unexpected #%c%c", c, c1);
+	return scm_error("read_boolean: unexpected #%c%c", c, c1);
 }
 
-static double scm_read_character(void)
+static scm_obj_t read_char(void)
 {
 	int c, c1;
 
 	c = scm_read_char();
 	if (c == EOF)
-		errx(EXIT_FAILURE, "read: unexpected EOF after #\\");
+		return scm_error("read_char: unexpected EOF after #\\");
 
 	c1 = scm_read_char();
-	if (c1 == EOF || scm_delimiter(c1))
-		return scm_box(SCM_CHARACTER, c);
+	if (c1 == EOF || is_delimiter(c1))
+		return scm_char(c);
 
-	errx(EXIT_FAILURE, "read: unexpected #\\%c%c", c, c1);
+	return scm_error("read_char: unexpected #\\%c%c", c, c1);
 }
 
-static double scm_read_number_radix(int radix)
+static size_t scan_token(char *buf, size_t size)
 {
-	size_t len;
-	char buf[SCM_TOKEN_SIZE];
-	len = scm_scan_token(buf, sizeof(buf));
-	if (len == 1)
-		errx(EXIT_FAILURE, "read: unexpected number format #<radix><delimiter>");
+	size_t i = 0;
+	int c;
 
-	if (radix == 10)
-		return scm_strtod(buf);
-	else
-		return scm_strtol(buf, radix);
+	while (((c = scm_peek_char()) != EOF) && !is_delimiter(c) && (i < size)) {
+		scm_read_char();
+		buf[i++] = c;
+	}
+
+	if (i >= size) i = 0;
+
+	buf[i] = '\0';
+	return i;
 }
 
-static double scm_read_sharp(void)
+static scm_obj_t read_number_radix(int radix)
+{
+	char buf[SCM_TOKEN_SIZE];
+	scm_obj_t obj;
+
+	scan_token(buf, sizeof buf);
+
+	obj = scm_string_to_number(buf, radix);
+	if (!scm_boolean_value(obj)) return scm_error("read_number_radix: parse error %s (%d)", buf, radix);
+
+	return obj;
+}
+
+static scm_obj_t read_sharp(void)
 {
 	int c = scm_read_char();
 
 	if (c == 'f' || c == 't')
-		return scm_read_boolean(c);
+		return read_boolean(c);
 	else if (c == '\\')
-		return scm_read_character();
+		return read_char();
 	else if (c == 'b' || c == 'B')
-		return scm_read_number_radix(2);
+		return read_number_radix(2);
 	else if (c == 'o' || c == 'O')
-		return scm_read_number_radix(8);
+		return read_number_radix(8);
 	else if (c == 'd' || c == 'D')
-		return scm_read_number_radix(10);
+		return read_number_radix(10);
 	else if (c == 'x' || c == 'X')
-		return scm_read_number_radix(16);
+		return read_number_radix(16);
 	else
-		errx(EXIT_FAILURE, "read: unexpected #%c", c);
+		return scm_error("read: unexpected #%c", c);
 }
 
-static double scm_read_number_digit(char c)
+static scm_obj_t read_number(int c)
 {
 	char buf[SCM_TOKEN_SIZE];
+	scm_obj_t obj;
 
 	buf[0] = c;
-	scm_scan_token(buf + 1, sizeof(buf) - 1);
+	scan_token(buf + 1, sizeof buf - 1);
 
-	return scm_strtod(buf);
+	obj = scm_string_to_number(buf, 0);
+	if (!scm_boolean_value(obj)) return scm_error("read_number: parse error %s", buf);
+
+	return obj;
 }
 
-static double scm_make_symbol(const char *buf, size_t size)
+static scm_obj_t read_symbol(int c)
 {
-	size_t idx;
+	char buf[SCM_TOKEN_SIZE];
+	size_t len;
+	scm_obj_t obj;
 
-	idx = scm_cell_put(buf, size);
+	buf[0] = c;
+	len = scan_token(buf + 1, sizeof buf - 1);
+	if (len == 0) return scm_error("read_symbol: parse error");
 
-	if (idx >= SCM_CELL_NUM)
-		errx(EXIT_FAILURE, "read: symbol too long for cell");
+	obj = scm_string(buf, len+1);
+	if (scm_is_error_object(obj)) return obj;
 
-	return scm_box(SCM_SYMBOL, idx);
+	return scm_string_to_symbol(obj);
 }
 
-static double scm_read_list(void)
+static scm_obj_t read_symbol_or_number(int c)
 {
-	int c;
-	double tmp, head, last, tail, empty_list;
-	empty_list = scm_box(SCM_EMPTY_LIST, 0);
+	char buf[SCM_TOKEN_SIZE];
+	size_t len;
+	scm_obj_t obj;
 
-	c = scm_skip_whitespace();
-	if (c == ')') {
-		(void) scm_read_char();
-		return empty_list;
-	}
+	buf[0] = c;
+	len = scan_token(buf + 1, sizeof buf - 1);
 
-  	tmp = scm_read();
-	head = last = scm_cons(tmp, empty_list);
+	obj = scm_string_to_number(buf, 0);
+	if (scm_boolean_value(obj)) return obj;
+
+	obj = scm_string(buf, len+1);
+	if (scm_is_error_object(obj)) return obj;
+	       
+	return scm_string_to_symbol(obj);
+}
+
+static scm_obj_t read_list(void)
+{
+	scm_obj_t obj, head, last;
+
+  	obj = scm_read();
+	if (scm_is_rparen(obj)) return scm_empty_list();
+	head = last = scm_cons(obj, scm_empty_list());
 
 	while (1) {
-		c = scm_skip_whitespace();
+		obj = scm_read();
 
-		if (c == ')') {
-			(void) scm_read_char();
+		if (scm_is_rparen(obj)) {
 			return head;
 		}
-		else if (c == '.') {
-			(void) scm_read_char();
+		else if (scm_is_dot(obj)) {
 			scm_set_cdr(last, scm_read());
-			c = scm_skip_whitespace();
-			if (c != ')')
-				errx(EXIT_FAILURE, "read: missing )");
-			(void) scm_read_char();
-			return head;
+			return scm_is_rparen(scm_read()) ? head: scm_error("read: missing )");
 		}
 		else {
-			tmp = scm_read();
-			tail = scm_cons(tmp, empty_list);
-			scm_set_cdr(last, tail);
-			last = tail;
+			obj = scm_cons(obj, scm_empty_list());
+			scm_set_cdr(last, obj);
+			last = obj;
 		}
 	}
 }
 
-static double scm_read_string(void)
+static scm_obj_t read_string(void)
 {
 	char buf[SCM_STRING_SIZE];
-	size_t len, idx;
+	size_t n = 0;
+	int c;
 
-	len = scm_scan_string(buf, sizeof(buf));
-	idx = scm_cell_put(buf, len);
+	while (((c = scm_read_char()) != EOF) && (c != '"') && (n < sizeof buf))
+		buf[n++] = c;
 
-	if (idx >= SCM_CELL_NUM)
-		errx(EXIT_FAILURE, "read: string too long for cell");
+	if (n >= sizeof buf) return scm_error("read_string: string too long");
 
-	return scm_box(SCM_STRING, idx);
+	buf[n] = 0;
+
+	return scm_string(buf, n);
 }
 
-static double scm_read_quote(void)
+static scm_obj_t read_quote(void)
 {
-	return scm_cons(0, 0);
+	scm_obj_t obj;
+	const char quote[] = "quote";
+
+	obj = scm_string(quote, sizeof quote);
+	if (scm_is_error_object(obj)) return obj;
+
+	return scm_cons(scm_string_to_symbol(obj), scm_read());
 }
 
-static double scm_read_symbol(char c)
-{
-	char buf[SCM_TOKEN_SIZE];
-	size_t len;
-
-	buf[0] = c;
-	len = scm_scan_token(buf + 1, sizeof(buf) - 1);
-
-	return scm_make_symbol(buf, len+1);
-}
-
-static double scm_read_sign(char c)
-{
-	char buf[SCM_TOKEN_SIZE];
-	size_t len;
-
-	buf[0] = c;
-	len = scm_scan_token(buf + 1, sizeof(buf) - 1);
-	if (len == 0)
-		return scm_make_symbol(buf, 2);
-	else if (scm_digit(buf[1]))
-		return scm_strtod(buf);
-	else
-		errx(EXIT_FAILURE, "read: unexpected %s", buf);
-}
-
-extern double scm_read(void)
+extern scm_obj_t scm_read(void)
 {
 	int c;
 
 	while (1) {
 		c = scm_read_char();
 
-		if (scm_whitespace(c))
+		if (is_whitespace(c))
 			continue;
 		else if (c == ';')
-			scm_skip_comment();
-		else if (c == '(')
-			return scm_read_list();
-		else if (c == '"')
-			return scm_read_string();
-		else if (c == '\'')
-			return scm_read_quote();
-		else if (c == '#')
-			return scm_read_sharp();
-		else if (c == '+' || c == '-')
-			return scm_read_sign(c);
-		else if (scm_digit(c))
-			return scm_read_number_digit(c);
-		else if (scm_initial(c))
-			return scm_read_symbol(c);
+			skip_comment();
 		else if (c == EOF)
-			exit(EXIT_SUCCESS);
+			return scm_eof_object();
+		else if (c == '(')
+			return read_list();
+		else if (c == ')')
+			return scm_rparen();
+		else if (c == '.')
+			return scm_dot();
+		else if (c == '"')
+			return read_string();
+		else if (c == '\'')
+			return read_quote();
+		else if (c == '#')
+			return read_sharp();
+		else if (is_digit(c))
+			return read_number(c);
+		else if (is_initial(c))
+			return read_symbol(c);
+		else if (is_explicit_sign(c))		
+			return read_symbol_or_number(c);
 		else
-			errx(EXIT_FAILURE, "read: unexpected %c", c);
+			return scm_error("read: unexpected %c", c);
 	}
 }

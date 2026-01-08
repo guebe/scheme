@@ -1,101 +1,86 @@
-/* (c) guenter.ebermann@htl-hl.ac.at
- * Tiny Scheme Interpreter
- *
- * Scheme procedures
- */
+/* (c) guenter.ebermann@htl-hl.ac.at */
 
 #ifndef __SCHEME_H__
 #define __SCHEME_H__
 
-#include <inttypes.h>
-#include <err.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 
-#include "object.h"
+typedef uint64_t scm_obj_t;
 
-static inline double scm_cons(double a, double b)
-{
-	size_t tmp, i;
+/* tags */
+#define SCM_MASK         0xffff000000000000
+/* do not use: -inf      0xfff0000000000000 */
+#define SCM_EMPTY_LIST   0xfff1000000000000
+#define SCM_TRUE         0xfff2000000000000
+#define SCM_FALSE        0xfff3000000000000
+#define SCM_EOF          0xfff4000000000000
+#define SCM_DOT          0xfff5000000000000
+#define SCM_RPAREN       0xfff6000000000000
+/* do not use: -nan      0xfff8000000000000 */
+#define SCM_ERROR        0xfff9000000000000
+#define SCM_SYMBOL       0xfffa000000000000
+#define SCM_STRING       0xfffb000000000000
+#define SCM_PAIR         0xfffc000000000000
+#define SCM_CHAR         0xfffd000000000000
 
-	tmp = i = scm_i;
-	if (i + 2 >= SCM_CELL_NUM) errx(EXIT_FAILURE, "out of memory\n");
-	scm_cell[i++] = a;
-	scm_cell[i++] = b;
-	scm_i = i;
-	return scm_box(SCM_PAIR, tmp);
-}
+/* type predicates */
+static inline _Bool scm_is_empty_list(scm_obj_t obj)   { return (obj & SCM_MASK) == SCM_EMPTY_LIST; }
+static inline _Bool scm_is_boolean(scm_obj_t obj)      { return ((obj & SCM_MASK) == SCM_TRUE) || ((obj & SCM_MASK) == SCM_FALSE); }
+static inline _Bool scm_is_eof_object(scm_obj_t obj)   { return (obj & SCM_MASK) == SCM_EOF; }
+static inline _Bool scm_is_dot(scm_obj_t obj)          { return (obj & SCM_MASK) == SCM_DOT; }
+static inline _Bool scm_is_rparen(scm_obj_t obj)       { return (obj & SCM_MASK) == SCM_RPAREN; }
+static inline _Bool scm_is_error_object(scm_obj_t obj) { return (obj & SCM_MASK) == SCM_ERROR; }
+static inline _Bool scm_is_symbol(scm_obj_t obj)       { return (obj & SCM_MASK) == SCM_SYMBOL; }
+static inline _Bool scm_is_string(scm_obj_t obj)       { return (obj & SCM_MASK) == SCM_STRING; }
+static inline _Bool scm_is_pair(scm_obj_t obj)         { return (obj & SCM_MASK) == SCM_PAIR; }
+static inline _Bool scm_is_char(scm_obj_t obj)         { return (obj & SCM_MASK) == SCM_CHAR; }
 
-static inline double scm_car(double a)
-{
-	uint64_t value, x;
-	unsigned int tag;
+/* accessors */
+static inline _Bool scm_boolean_value(scm_obj_t obj) { return obj != SCM_FALSE; }
+static inline uint32_t scm_string_length(scm_obj_t string) { return (string >> 32) & 0xFFFF; }
+static inline double scm_number_value(scm_obj_t number) { double d; memcpy(&d, &number, sizeof d); return d; }
+static inline unsigned char scm_char_value(scm_obj_t c) { return c; }
+extern scm_obj_t scm_car(scm_obj_t pair);
+extern scm_obj_t scm_cdr(scm_obj_t pair);
+extern unsigned char scm_string_ref(scm_obj_t string, size_t k);
 
-	x = scm_unbox(a);
-	tag = scm_get_tag(x);
-	value = scm_value(x);
+/* mutators */
+extern void scm_set_car(scm_obj_t pair, scm_obj_t obj);
+extern void scm_set_cdr(scm_obj_t pair, scm_obj_t obj);
+extern void scm_string_set(scm_obj_t string, uint32_t k, unsigned char c);
 
-	if (tag != SCM_PAIR)
-		errx(EXIT_FAILURE, "car: bad argument type");
+/* constructors */
+static inline scm_obj_t scm_empty_list(void) { return SCM_EMPTY_LIST; }
+static inline scm_obj_t scm_boolean(_Bool x) { return x?SCM_TRUE:SCM_FALSE; }
+static inline scm_obj_t scm_true(void) { return SCM_TRUE; }
+static inline scm_obj_t scm_false(void) { return SCM_FALSE; }
+static inline scm_obj_t scm_eof_object(void) { return SCM_EOF; }
+static inline scm_obj_t scm_dot(void) { return SCM_DOT; }
+static inline scm_obj_t scm_rparen(void) { return SCM_RPAREN; }
+static inline scm_obj_t scm_string_to_symbol(scm_obj_t string) { return (string & ~SCM_MASK) | SCM_SYMBOL; }
+static inline scm_obj_t scm_symbol_to_string(scm_obj_t symbol) { return (symbol & ~SCM_MASK) | SCM_STRING; }
+static inline scm_obj_t scm_char(unsigned char c) { return SCM_CHAR | c; }
+extern scm_obj_t __attribute__((format(printf, 1, 2))) scm_error(const char *message, ...);
+extern scm_obj_t scm_string_to_number(const char *string, int radix);
+extern scm_obj_t scm_string(const char *x, uint32_t k);
+extern scm_obj_t scm_cons(scm_obj_t obj1, scm_obj_t obj2);
 
-	return scm_cell[value];
-}
+/* primitives */
+extern void scm_write(scm_obj_t obj);
+extern scm_obj_t scm_read(void);
+extern int scm_read_char(void);
+extern int scm_peek_char(void);
 
-static inline double scm_cdr(double a)
-{
-	uint64_t value, x;
-	unsigned int tag;
-
-	x = scm_unbox(a);
-	tag = scm_get_tag(x);
-	value = scm_value(x);
-
-	if (tag != SCM_PAIR)
-		errx(EXIT_FAILURE, "car: bad argument type");
-
-	return scm_cell[value+1];
-}
-
-static inline void scm_set_car(double a, double b)
-{
-	uint64_t i = scm_value(scm_unbox(a));
-	scm_cell[i] = b;
-}
-
-static inline void scm_set_cdr(double a, double b)
-{
-	uint64_t i = scm_value(scm_unbox(a));
-	scm_cell[i+1] = b;
-}
-
-static inline int scm_read_char(void)
-{
-	int c;
-
-	if (scm_peek_buffer != EOF) {
-		c = scm_peek_buffer;
-		scm_peek_buffer = EOF;
-	} else {
-		c = getchar();
-	}
-
-	return c;
-}
-
-static inline int scm_peek_char(void)
-{
-	if (scm_peek_buffer == EOF) {
-		scm_peek_buffer = getchar();
-	}
-
-	return scm_peek_buffer;
-}
-
-extern void scm_display(double obj);
-extern void scm_newline(void);
-extern double scm_read(void);
+#if 0
+#define CLOS 6U /* closure - idx to cell with pair variables . body in env - a user defined function */
+#define PRIM 7U /* primitive - idx to func ptr table - special forms - control evaluation - the primitive itself (callee) evaluates its arguments according to special rules */
+#define PROC 8U /* procedure - idx to func ptr table - builtins - eval args then apply procedure - the caller already evaluated all arguments - the callee takes already evaluated arguments */
+/* symbol table: list of strings key = symbol index (a b c) (cons a (cons b (cons c '()))) */
+scm_obj_t symbols;
+/* environments: list of list of pairs (symbol index . value|procedure) (((a . 3) (b . proc)) ((a . 5) (b . 8)) */
+scm_obj_t env;
+#endif
 
 #endif
 
