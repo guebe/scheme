@@ -110,7 +110,7 @@ static scm_obj_t read_number(int c)
 static scm_obj_t read_symbol(int c)
 {
 	char buf[SCM_TOKEN_SIZE];
-	size_t len;
+	ssize_t len;
 	scm_obj_t obj;
 
 	buf[0] = c;
@@ -126,11 +126,12 @@ static scm_obj_t read_symbol(int c)
 static scm_obj_t read_symbol_or_number(int c)
 {
 	char buf[SCM_TOKEN_SIZE];
-	size_t len;
+	ssize_t len;
 	scm_obj_t obj;
 
 	buf[0] = c;
-	len = scan_token(buf + 1, sizeof buf - 1);
+	if ((len = scan_token(buf + 1, sizeof buf - 1)) < 0)
+		return scm_error("read_symbol_or_number: scan error");
 
 	obj = scm_string_to_number(buf, 0);
 	if (scm_boolean_value(obj)) return obj;
