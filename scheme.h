@@ -46,7 +46,7 @@ static inline double scm_number_value(scm_obj_t number) { double d; memcpy(&d, &
 static inline char scm_char_value(scm_obj_t c) { return (char)c; }
 extern scm_obj_t scm_car(scm_obj_t pair);
 extern scm_obj_t scm_cdr(scm_obj_t pair);
-extern char scm_string_ref(scm_obj_t string, size_t k);
+extern const char *scm_string_value(scm_obj_t string);
 extern const char *scm_error_object_message(scm_obj_t error_object);
 
 /* mutators */
@@ -73,6 +73,7 @@ extern scm_obj_t scm_cons(scm_obj_t obj1, scm_obj_t obj2);
 /* primitives */
 extern void scm_write(scm_obj_t obj);
 extern scm_obj_t scm_read(void);
+extern scm_obj_t scm_eval(scm_obj_t expr_or_def, scm_obj_t environment_specifier);
 extern int scm_read_char(void);
 extern int scm_peek_char(void);
 

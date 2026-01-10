@@ -9,17 +9,9 @@
 static scm_obj_t cell[SCM_CELL_NUM];
 static size_t cell_idx = 0;
 
-extern char scm_string_ref(scm_obj_t string, size_t k)
+extern const char *scm_string_value(scm_obj_t string)
 {
-	size_t i, j;
-       
-	if (k > scm_string_length(string))
-		return '\0';
-
-	i = (string & SCM_CELL_MASK) + (k / sizeof(scm_obj_t));
-	j = k % sizeof(scm_obj_t);
-
-	return *((char *)&cell[i] + j);
+	return (const char *)&cell[string & SCM_CELL_MASK];
 }
 
 extern scm_obj_t scm_string(const char *string, size_t k)

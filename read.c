@@ -143,17 +143,18 @@ static scm_obj_t read_symbol_or_number(char c)
 	return scm_string_to_symbol(obj);
 }
 
+static scm_obj_t read(_Bool is_list);
 static scm_obj_t read_list(void)
 {
 	scm_obj_t obj, head, last;
 
-  	obj = scm_read();
+	obj = read(1);
 	if (scm_is_error_object(obj)) return obj;
 	else if (scm_is_rparen(obj)) return scm_empty_list();
 	head = last = scm_cons(obj, scm_empty_list());
 
 	while (1) {
-		obj = scm_read();
+		obj = read(1);
 
 		if (scm_is_error_object(obj)) {
 			return obj;
@@ -162,10 +163,10 @@ static scm_obj_t read_list(void)
 			return head;
 		}
 		else if (scm_is_dot(obj)) {
-			obj = scm_read();
+			obj = read(1);
 			if (scm_is_error_object(obj)) return obj;
 			scm_set_cdr(last, obj);
-			return scm_is_rparen(scm_read()) ? head: scm_error("read_list: missing )");
+			return scm_is_rparen(read(1)) ? head: scm_error("read_list: missing )");
 		}
 		else {
 			obj = scm_cons(obj, scm_empty_list());
@@ -194,19 +195,21 @@ static scm_obj_t read_string(void)
 
 static scm_obj_t read_quote(void)
 {
-	scm_obj_t car, cdr;
-	const char quote[] = "quote";
+	scm_obj_t quote, datum, args;
 
-	car = scm_string(quote, sizeof quote);
-	if (scm_is_error_object(car)) return car;
+	quote = scm_string("quote", 5);
+	if (scm_is_error_object(quote)) return quote;
 
-	cdr = scm_read();
-	if (scm_is_error_object(cdr)) return cdr;
+	datum = read(0);
+	if (scm_is_error_object(datum)) return datum;
 
-	return scm_cons(scm_string_to_symbol(car), cdr);
+	args = scm_cons(datum, scm_empty_list());
+	if (scm_is_error_object(args)) return args;
+
+	return scm_cons(scm_string_to_symbol(quote), args);
 }
 
-extern scm_obj_t scm_read(void)
+static scm_obj_t read(_Bool is_list)
 {
 	int c;
 
@@ -222,9 +225,9 @@ extern scm_obj_t scm_read(void)
 		else if (c == '(')
 			return read_list();
 		else if (c == ')')
-			return scm_rparen();
+			return is_list ? scm_rparen() : scm_error("read: unexpected )");
 		else if (c == '.')
-			return scm_dot();
+			return is_list ? scm_dot() : scm_error("read: unexpected .");
 		else if (c == '"')
 			return read_string();
 		else if (c == '\'')
@@ -240,4 +243,9 @@ extern scm_obj_t scm_read(void)
 		else
 			return scm_error("read: unexpected %c", c);
 	}
+}
+
+extern scm_obj_t scm_read(void)
+{
+	return read(0);
 }

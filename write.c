@@ -19,13 +19,9 @@ static void write_list(scm_obj_t obj)
 	putchar(')');
 }
 
-static void write_string(scm_obj_t obj)
+static void write_string(scm_obj_t string)
 {
-	size_t i, n = scm_string_length(obj);
-	
-	for (i = 0; i < n; i++) {
-		putchar(scm_string_ref(obj, i));
-	}
+	fwrite(scm_string_value(string), 1, scm_string_length(string), stdout);
 }
 
 extern void scm_write(scm_obj_t obj)
