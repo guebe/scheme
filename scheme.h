@@ -47,6 +47,7 @@ static inline char scm_char_value(scm_obj_t c) { return (char)c; }
 extern scm_obj_t scm_car(scm_obj_t pair);
 extern scm_obj_t scm_cdr(scm_obj_t pair);
 extern char scm_string_ref(scm_obj_t string, size_t k);
+extern const char *scm_error_object_message(scm_obj_t error_object);
 
 /* mutators */
 extern void scm_set_car(scm_obj_t pair, scm_obj_t obj);
