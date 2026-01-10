@@ -58,13 +58,13 @@ extern scm_obj_t scm_cons(scm_obj_t obj1, scm_obj_t obj2)
 extern scm_obj_t scm_car(scm_obj_t pair)
 {
 	size_t i = pair & SCM_CELL_MASK;
-	return scm_is_pair(pair) ? cell[i] : scm_error("car: bad argument type");
+	return scm_is_pair(pair) ? cell[i] : scm_error("car: not a pair");
 }
 
 extern scm_obj_t scm_cdr(scm_obj_t pair)
 {
 	size_t i = (pair & SCM_CELL_MASK) + 1U;
-	return scm_is_pair(pair) ? cell[i] : scm_error("cdr: bad argument type");
+	return scm_is_pair(pair) ? cell[i] : scm_error("cdr: not a pair");
 }
 
 extern void scm_set_car(scm_obj_t pair, scm_obj_t obj)

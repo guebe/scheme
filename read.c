@@ -94,7 +94,7 @@ static scm_obj_t read_sharp(void)
 	else if (c == 'x' || c == 'X')
 		return read_number_radix(16);
 	else
-		return scm_error("read: unexpected #%c", c);
+		return scm_error("read_sharp: unexpected #%c", c);
 }
 
 static scm_obj_t read_number(char c)
@@ -149,7 +149,7 @@ static scm_obj_t read_list(void)
 
   	obj = scm_read();
 	if (scm_is_error_object(obj)) return obj;
-	if (scm_is_rparen(obj)) return scm_empty_list();
+	else if (scm_is_rparen(obj)) return scm_empty_list();
 	head = last = scm_cons(obj, scm_empty_list());
 
 	while (1) {
@@ -165,7 +165,7 @@ static scm_obj_t read_list(void)
 			obj = scm_read();
 			if (scm_is_error_object(obj)) return obj;
 			scm_set_cdr(last, obj);
-			return scm_is_rparen(scm_read()) ? head: scm_error("read: missing )");
+			return scm_is_rparen(scm_read()) ? head: scm_error("read_list: missing )");
 		}
 		else {
 			obj = scm_cons(obj, scm_empty_list());
@@ -194,13 +194,16 @@ static scm_obj_t read_string(void)
 
 static scm_obj_t read_quote(void)
 {
-	scm_obj_t obj;
+	scm_obj_t car, cdr;
 	const char quote[] = "quote";
 
-	obj = scm_string(quote, sizeof quote);
-	if (scm_is_error_object(obj)) return obj;
+	car = scm_string(quote, sizeof quote);
+	if (scm_is_error_object(car)) return car;
 
-	return scm_cons(scm_string_to_symbol(obj), scm_read());
+	cdr = scm_read();
+	if (scm_is_error_object(cdr)) return cdr;
+
+	return scm_cons(scm_string_to_symbol(car), cdr);
 }
 
 extern scm_obj_t scm_read(void)
