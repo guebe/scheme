@@ -50,6 +50,7 @@ static scm_obj_t read_char(void)
 	return scm_error("read_char: unexpected #\\%c%c", c, c1);
 }
 
+__attribute__((warn_unused_result))
 static ssize_t scan_token(char *buf, size_t size)
 {
 	ssize_t i = 0, ssize = (ssize_t)size;

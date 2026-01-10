@@ -63,7 +63,8 @@ static inline scm_obj_t scm_rparen(void) { return SCM_RPAREN; }
 static inline scm_obj_t scm_string_to_symbol(scm_obj_t string) { return (string & ~SCM_MASK) | SCM_SYMBOL; }
 static inline scm_obj_t scm_symbol_to_string(scm_obj_t symbol) { return (symbol & ~SCM_MASK) | SCM_STRING; }
 static inline scm_obj_t scm_char(char c) { return SCM_CHAR | (scm_obj_t)c; }
-extern scm_obj_t __attribute__((format(printf, 1, 2))) scm_error(const char *message, ...);
+__attribute__((warn_unused_result))
+extern scm_obj_t scm_error(const char *message, ...);
 extern scm_obj_t scm_string_to_number(const char *string, int radix);
 extern scm_obj_t scm_string(const char *string, size_t k);
 extern scm_obj_t scm_cons(scm_obj_t obj1, scm_obj_t obj2);
