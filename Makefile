@@ -22,7 +22,7 @@ fuzz_blackbox:
 	./fuzz.sh
 
 scheme: $(SRC_SCHEME) scheme.h
-	clang -Wall -Wextra -Wshadow -Wconversion -Wpedantic -Wstrict-prototypes -Werror -O3 -fjump-tables -o $@ $(SRC_SCHEME)
+	clang -Wall -Wextra -Wshadow -Wconversion -Wpedantic -Wstrict-prototypes -Wsign-compare -Wformat-security -Wmisleading-indentation -Wnonnull -Wold-style-definition -Wnested-externs -Werror -O3 -fjump-tables -o $@ $(SRC_SCHEME)
 
 scheme_debug: $(SRC_SCHEME) scheme.h
 	clang -O0 -g -fsanitize=address,undefined -o $@ $(SRC_SCHEME)
