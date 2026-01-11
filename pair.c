@@ -1,6 +1,7 @@
 /* (c) guenter.ebermann@htl-hl.ac.at */
 
 #include "scheme.h"
+#include <stdio.h>
 #include <string.h>
 
 #define SCM_CELL_MASK 0xFFFFFFFF
