@@ -8,6 +8,10 @@ All Scheme objects are represented as 64-bit values, leveraging unused NaN space
 
 This is an experimental, low-level implementation aimed at simplicity, correctness, and performance.
 
+## Attention
+
+`scm754` is currently in the development phase and not suitable for production use.
+
 ## Correctness
 
 `scm754` enforces correctness through a combination of:
