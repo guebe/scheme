@@ -143,39 +143,40 @@ static scm_obj_t read_symbol_or_number(char c)
 	return scm_string_to_symbol(obj);
 }
 
-static scm_obj_t read(_Bool is_list);
+static scm_obj_t read(_Bool dot_ok, _Bool rparen_ok, _Bool eof_ok);
 static scm_obj_t read_list(void)
 {
 	scm_obj_t obj, head, last;
 
-	obj = read(1);
+	obj = read(0, 1, 0);
 	if (scm_is_error_object(obj)) return obj;
-	else if (scm_is_eof_object(obj)) return scm_error("read_list: EOF while scanning list head");
-	else if (scm_is_rparen(obj)) return scm_empty_list();
+	if (scm_is_rparen(obj)) return scm_empty_list();
+
 	head = last = scm_cons(obj, scm_empty_list());
+	if (scm_is_error_object(head)) return head;
 
 	while (1) {
-		obj = read(1);
+		obj = read(1, 1, 0);
+		if (scm_is_error_object(obj)) return obj;
+		if (scm_is_rparen(obj)) return head;
+		if (scm_is_dot(obj)) {
+			/* Read dotted pair */
+			obj = read(0, 0, 0);
+			if (scm_is_error_object(obj)) return obj;
 
-		if (scm_is_error_object(obj)) {
-			return obj;
-		}
-		else if (scm_is_eof_object(obj)) {
-			return scm_error("read_list: EOF while scanning list body");
-		}
-		else if (scm_is_rparen(obj)) {
+			scm_set_cdr(last, obj);
+
+			/* After dot, next must be rparen */
+			obj = read(0, 1, 0);
+			if (scm_is_error_object(obj)) return obj;
+			if (!scm_is_rparen(obj)) return scm_error("read: closing rparen ) missing");
 			return head;
 		}
-		else if (scm_is_dot(obj)) {
-			obj = read(1);
-			if (scm_is_error_object(obj)) return obj;
-			else if (scm_is_eof_object(obj)) return scm_error("read_list: EOF while scanning right side after dot (.)");
-			scm_set_cdr(last, obj);
-			return scm_is_rparen(read(1)) ? head: scm_error("read_list: closing rparen ) not found after dot (.)");
-		}
 		else {
+			/* Normal cons */
 			obj = scm_cons(obj, scm_empty_list());
 			if (scm_is_error_object(obj)) return obj;
+
 			scm_set_cdr(last, obj);
 			last = obj;
 		}
@@ -205,9 +206,8 @@ static scm_obj_t read_quote(void)
 	quote = scm_string("quote", 5);
 	if (scm_is_error_object(quote)) return quote;
 
-	datum = read(0);
+	datum = read(0, 0, 0);
 	if (scm_is_error_object(datum)) return datum;
-	else if (scm_is_eof_object(datum)) return scm_error("read_quote: EOF");
 
 	args = scm_cons(datum, scm_empty_list());
 	if (scm_is_error_object(args)) return args;
@@ -215,7 +215,7 @@ static scm_obj_t read_quote(void)
 	return scm_cons(scm_string_to_symbol(quote), args);
 }
 
-static scm_obj_t read(_Bool is_list)
+static scm_obj_t read(_Bool dot_ok, _Bool rparen_ok, _Bool eof_ok)
 {
 	int c;
 
@@ -227,13 +227,13 @@ static scm_obj_t read(_Bool is_list)
 		else if (c == ';')
 			skip_comment();
 		else if (c == EOF)
-			return scm_eof_object();
+			return eof_ok ? scm_eof_object() : scm_error("read: unexpected end-of-file");
 		else if (c == '(')
 			return read_list();
 		else if (c == ')')
-			return is_list ? scm_rparen() : scm_error("read: too many )");
+			return rparen_ok ? scm_rparen() : scm_error("read: too many )");
 		else if (c == '.')
-			return is_list ? scm_dot() : scm_error("read: unexpected dot (.)");
+			return dot_ok ? scm_dot() : scm_error("read: unexpected dot (.)");
 		else if (c == '"')
 			return read_string();
 		else if (c == '\'')
@@ -253,5 +253,5 @@ static scm_obj_t read(_Bool is_list)
 
 extern scm_obj_t scm_read(void)
 {
-	return read(0);
+	return read(0, 0, 1);
 }
