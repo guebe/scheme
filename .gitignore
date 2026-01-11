@@ -5,4 +5,5 @@
 .gdb_history
 scheme
 scheme_debug
+scheme_test
 fuzz_whitebox

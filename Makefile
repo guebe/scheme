@@ -13,7 +13,7 @@ CFLAGS_EXTRA_FUZZ = -O1 -g -fsanitize=fuzzer,address,undefined
 
 all: scheme
 
-test: scheme scheme_debug test_read.test fuzz_whitebox fuzz_blackbox analyze tidy
+test: scheme scheme_debug scheme_test test_read.test fuzz_whitebox fuzz_blackbox analyze tidy
 
 clean:
 	rm -f scheme scheme_debug fuzz_whitebox *.out *.plist
@@ -36,10 +36,13 @@ scheme_debug: $(SRC_SCHEME) scheme.h
 fuzz_whitebox: $(SRC_FUZZ) scheme.h
 	$(CC) $(CFLAGS) $(CFLAGS_EXTRA_FUZZ) -o $@ $(SRC_FUZZ)
 
+scheme_test: $(SRC_SCHEME) scheme.h
+	$(CC) $(CFLAGS) -DSCM_NO_EVAL -o $@ $(SRC_SCHEME)
+
 # test golden reference and round-trip invariant
 %.test: %.scm
-	./scheme < $< > $*.out
+	./scheme_test < $< > $*.out
 	diff $*.ref $*.out
 	sed 's/> //' $*.out > $*.scm.out
-	./scheme < $*.scm.out > $*.scm.out.out
+	./scheme_test < $*.scm.out > $*.scm.out.out
 	diff $*.out $*.scm.out.out
