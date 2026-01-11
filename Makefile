@@ -11,12 +11,12 @@ CFLAGS_EXTRA_FUZZ = -O1 -g -fsanitize=fuzzer,address,undefined
 
 .PHONY: all test clean analyze fuzz_blackbox
 
-all: scheme
+all: scm754
 
-test: scheme scheme_debug scheme_test test_read.test fuzz_whitebox fuzz_blackbox analyze tidy
+test: scm754 scm754_debug test_read test_read.test scm754.test fuzz_whitebox fuzz_blackbox analyze tidy
 
 clean:
-	rm -f scheme scheme_debug fuzz_whitebox *.out *.plist
+	rm -f scm754 scm754_debug fuzz_whitebox test_read *.out *.plist
 
 analyze:
 	clang --analyze $(SRC_SCHEME)
@@ -27,22 +27,22 @@ tidy:
 fuzz_blackbox:
 	./fuzz_blackbox
 
-scheme: $(SRC_SCHEME) scheme.h
+scm754: $(SRC_SCHEME) scm754.h
 	$(CC) $(CFLAGS) -o $@ $(SRC_SCHEME)
 
-scheme_debug: $(SRC_SCHEME) scheme.h
+scm754_debug: $(SRC_SCHEME) scm754.h
 	$(CC) $(CFLAGS) $(CFLAGS_EXTRA_DEBUG) -o $@ $(SRC_SCHEME)
 
-fuzz_whitebox: $(SRC_FUZZ) scheme.h
+fuzz_whitebox: $(SRC_FUZZ) scm754.h
 	$(CC) $(CFLAGS) $(CFLAGS_EXTRA_FUZZ) -o $@ $(SRC_FUZZ)
 
-scheme_test: $(SRC_SCHEME) scheme.h
+test_read: $(SRC_SCHEME) scm754.h
 	$(CC) $(CFLAGS) -DSCM_NO_EVAL -o $@ $(SRC_SCHEME)
 
 # test golden reference and round-trip invariant
 %.test: %.scm
-	./scheme_test < $< > $*.out
+	./$* < $< > $*.out
 	diff $*.ref $*.out
 	sed 's/> //' $*.out > $*.scm.out
-	./scheme_test < $*.scm.out > $*.scm.out.out
+	./$* < $*.scm.out > $*.scm.out.out
 	diff $*.out $*.scm.out.out

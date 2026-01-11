@@ -1,6 +1,6 @@
 /* (c) guenter.ebermann@htl-hl.ac.at */
 
-#include "scheme.h"
+#include "scm754.h"
 
 static scm_obj_t eval_list(scm_obj_t list, scm_obj_t environment_specifier)
 {

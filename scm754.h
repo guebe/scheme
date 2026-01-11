@@ -1,7 +1,7 @@
 /* (c) guenter.ebermann@htl-hl.ac.at */
 
-#ifndef __SCHEME_H__
-#define __SCHEME_H__
+#ifndef __SCM754_H__
+#define __SCM754_H__
 
 #include <stdint.h>
 #include <string.h>

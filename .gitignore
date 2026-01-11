@@ -3,7 +3,7 @@
 *.swp
 *.plist
 .gdb_history
-scheme
-scheme_debug
-scheme_test
+scm754
+scm754_debug
+test_read
 fuzz_whitebox

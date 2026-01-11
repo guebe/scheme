@@ -1,4 +1,6 @@
-#include "scheme.h"
+/* (c) guenter.ebermann@htl-hl.ac.at */
+
+#include "scm754.h"
 #include <stdio.h>
 #include <stdint.h>
 

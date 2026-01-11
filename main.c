@@ -1,6 +1,6 @@
 /* (c) guenter.ebermann@htl-hl.ac.at */
 
-#include "scheme.h"
+#include "scm754.h"
 #include <stdio.h>
 
 int main(void)
