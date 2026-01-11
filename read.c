@@ -6,6 +6,12 @@
 #define SCM_TOKEN_SIZE  128
 #define SCM_STRING_SIZE 512
 
+#ifndef SCM_READ_DEPTH
+#define SCM_READ_DEPTH 8192
+#endif
+
+static size_t read_depth;
+
 /* R7RS, section 7.1.1, Lexical structure */
 static inline _Bool is_line_ending(int c) { return c == '\r' || c == '\n'; }
 static inline _Bool is_whitespace(int c) { return c == ' ' || c == '\t' || is_line_ending(c); }
@@ -143,6 +149,22 @@ static scm_obj_t read_symbol_or_number(char c)
 	return scm_string_to_symbol(obj);
 }
 
+static scm_obj_t read_string(void)
+{
+	char buf[SCM_STRING_SIZE];
+	size_t n = 0;
+	int c;
+
+	while (((c = scm_read_char()) != EOF) && (c != '"') && (n < sizeof buf))
+		buf[n++] = (char)c;
+
+	if (n >= sizeof buf) return scm_error("read_string: string too long");
+
+	buf[n] = 0;
+
+	return scm_string(buf, n);
+}
+
 static scm_obj_t read(_Bool dot_ok, _Bool rparen_ok, _Bool eof_ok);
 static scm_obj_t read_list(void)
 {
@@ -183,22 +205,6 @@ static scm_obj_t read_list(void)
 	}
 }
 
-static scm_obj_t read_string(void)
-{
-	char buf[SCM_STRING_SIZE];
-	size_t n = 0;
-	int c;
-
-	while (((c = scm_read_char()) != EOF) && (c != '"') && (n < sizeof buf))
-		buf[n++] = (char)c;
-
-	if (n >= sizeof buf) return scm_error("read_string: string too long");
-
-	buf[n] = 0;
-
-	return scm_string(buf, n);
-}
-
 static scm_obj_t read_quote(void)
 {
 	scm_obj_t quote, datum, args;
@@ -218,6 +224,9 @@ static scm_obj_t read_quote(void)
 static scm_obj_t read(_Bool dot_ok, _Bool rparen_ok, _Bool eof_ok)
 {
 	int c;
+
+	if (++read_depth > SCM_READ_DEPTH)
+		return scm_error("read: maximum recursion depth exceeded");
 
 	while (1) {
 		c = scm_read_char();
@@ -253,5 +262,6 @@ static scm_obj_t read(_Bool dot_ok, _Bool rparen_ok, _Bool eof_ok)
 
 extern scm_obj_t scm_read(void)
 {
+	read_depth = 0;
 	return read(0, 0, 1);
 }
