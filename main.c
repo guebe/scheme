@@ -15,6 +15,9 @@ int main(void)
 		if (scm_is_eof_object(obj)) { break; }
 		else if (scm_is_error_object(obj)) { puts(scm_error_object_message(obj)); continue; }
 
+		obj = scm_eval(obj, scm_empty_list());
+		if (scm_is_error_object(obj)) { puts(scm_error_object_message(obj)); continue; }
+
 		scm_write(obj);
 		putchar('\n');
 	}

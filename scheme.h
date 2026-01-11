@@ -38,6 +38,11 @@ static inline _Bool scm_is_symbol(scm_obj_t obj)       { return (obj & SCM_MASK)
 static inline _Bool scm_is_string(scm_obj_t obj)       { return (obj & SCM_MASK) == SCM_STRING; }
 static inline _Bool scm_is_pair(scm_obj_t obj)         { return (obj & SCM_MASK) == SCM_PAIR; }
 static inline _Bool scm_is_char(scm_obj_t obj)         { return (obj & SCM_MASK) == SCM_CHAR; }
+static inline _Bool scm_is_number(scm_obj_t obj) {
+	scm_obj_t exp = (obj >> 52) & 0x7FF;
+	scm_obj_t tag = (obj >> 48) & 0xF;
+	return (exp != 0x7FF) || (((tag == 0) || (tag == 8)) && (exp == 0x7FF));
+}
 
 /* accessors */
 static inline _Bool scm_boolean_value(scm_obj_t obj) { return obj != SCM_FALSE; }
@@ -63,6 +68,7 @@ static inline scm_obj_t scm_dot(void) { return SCM_DOT; }
 static inline scm_obj_t scm_rparen(void) { return SCM_RPAREN; }
 static inline scm_obj_t scm_string_to_symbol(scm_obj_t string) { return (string & ~SCM_MASK) | SCM_SYMBOL; }
 static inline scm_obj_t scm_symbol_to_string(scm_obj_t symbol) { return (symbol & ~SCM_MASK) | SCM_STRING; }
+static inline scm_obj_t scm_number(double number) { scm_obj_t d; memcpy(&d, &number, sizeof d); return d; }
 static inline scm_obj_t scm_char(char c) { return SCM_CHAR | (scm_obj_t)c; }
 __attribute__((warn_unused_result))
 extern scm_obj_t scm_error(const char *message, ...);
@@ -74,6 +80,7 @@ extern scm_obj_t scm_cons(scm_obj_t obj1, scm_obj_t obj2);
 extern void scm_write(scm_obj_t obj);
 extern scm_obj_t scm_read(void);
 extern scm_obj_t scm_eval(scm_obj_t expr_or_def, scm_obj_t environment_specifier);
+extern scm_obj_t scm_apply(scm_obj_t proc, scm_obj_t args, scm_obj_t environment_specifier);
 extern int scm_read_char(void);
 extern int scm_peek_char(void);
 

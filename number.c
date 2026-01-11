@@ -3,14 +3,12 @@
 #include "scheme.h"
 #include <errno.h>
 #include <stdlib.h>
-#include <string.h>
 
 /* R7RS, section 6.2.7, Numerical input and output */
 extern scm_obj_t scm_string_to_number(const char *string, int radix)
 {
 	char *end;
 	double value;
-	scm_obj_t obj;
 
 	errno = 0;
 
@@ -21,7 +19,5 @@ extern scm_obj_t scm_string_to_number(const char *string, int radix)
 
 	if ((end == string) || (*end != '\0') || (errno != 0)) return scm_false();
 
-	memcpy(&obj, &value, sizeof obj);
-
-	return obj;
+	return scm_number(value);
 }

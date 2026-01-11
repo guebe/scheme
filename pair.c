@@ -11,7 +11,11 @@ static size_t cell_idx = 0;
 
 extern const char *scm_string_value(scm_obj_t string)
 {
-	return (const char *)&cell[string & SCM_CELL_MASK];
+	if (scm_is_string(string)) return (const char *)&cell[string & SCM_CELL_MASK];
+	else {
+		fputs("error: scm_string_value called on non-string object\n", stderr);
+		return "<not a string>";
+	}
 }
 
 extern scm_obj_t scm_string(const char *string, size_t k)
@@ -63,10 +67,12 @@ extern void scm_set_car(scm_obj_t pair, scm_obj_t obj)
 {
 	size_t i = pair & SCM_CELL_MASK;
 	if (scm_is_pair(pair)) cell[i] = obj;
+	else fputs("error: set-car! called on non-pair object\n", stderr);
 }
 
 extern void scm_set_cdr(scm_obj_t pair, scm_obj_t obj)
 {
 	size_t i = (pair & SCM_CELL_MASK) + 1U;
 	if (scm_is_pair(pair)) cell[i] = obj;
+	else fputs("error: set-cdr! called on non-pair object\n", stderr);
 }
