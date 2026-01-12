@@ -67,7 +67,7 @@
 '(a b c) ;'(a b c)
 '(a (b) c) ;'(a (b) c)
 '(((((x))))) ;'(((((x)))))
-;'((caar . cdar) . (cadr . cddr)) ;'((caar . cdar) . (cadr . cddr))
+'((caar . cdar) . (cadr . cddr)) ;'((caar . cdar) cadr . cddr)
 
 ; Integers
 
