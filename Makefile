@@ -39,10 +39,15 @@ fuzz_whitebox: $(SRC_FUZZ) scm754.h
 test_read: $(SRC_SCHEME) scm754.h
 	$(CC) $(CFLAGS) -DSCM_NO_EVAL -o $@ $(SRC_SCHEME)
 
-# test golden reference and round-trip invariant
+# test schemes read and its round-trip invariant
 %.test: %.scm
 	./$* < $< > $*.out
 	diff $*.ref $*.out
 	sed 's/> //' $*.out > $*.scm.out
 	./$* < $*.scm.out > $*.scm.out.out
 	diff $*.out $*.scm.out.out
+
+# test schemes read/eval/apply cycle
+scm754.test: scm754.scm
+	./scm754 < $< > scm754.out
+	diff scm754.ref scm754.out
