@@ -127,7 +127,7 @@ static scm_obj_t read_symbol(char c)
 	return scm_string_to_symbol(obj);
 }
 
-static scm_obj_t read_symbol_or_number(char c)
+static scm_obj_t read_symbol_or_number_or_dot(char c, _Bool dot_ok)
 {
 	char buf[SCM_TOKEN_SIZE];
 	ssize_t len;
@@ -137,12 +137,18 @@ static scm_obj_t read_symbol_or_number(char c)
 	if ((len = scan_token(buf + 1, sizeof buf - 1)) < 0)
 		return scm_error("read_symbol_or_number: scan error");
 
+	if (len == 0) {
+		if (c == '.') return dot_ok ? scm_dot() : scm_error("read: unexpected dot (.)");
+		goto make_symbol;
+	}
+
 	obj = scm_string_to_number(buf, 0);
 	if (scm_boolean_value(obj)) return obj;
 
+make_symbol:
 	obj = scm_string(buf, (size_t)len+1);
 	if (scm_is_error_object(obj)) return obj;
-	       
+
 	return scm_string_to_symbol(obj);
 }
 
@@ -238,8 +244,6 @@ static scm_obj_t read(_Bool dot_ok, _Bool rparen_ok, _Bool eof_ok)
 			return read_list();
 		else if (c == ')')
 			return rparen_ok ? scm_rparen() : scm_error("read: too many )");
-		else if (c == '.')
-			return dot_ok ? scm_dot() : scm_error("read: unexpected dot (.)");
 		else if (c == '"')
 			return read_string();
 		else if (c == '\'')
@@ -250,8 +254,8 @@ static scm_obj_t read(_Bool dot_ok, _Bool rparen_ok, _Bool eof_ok)
 			return read_number((char)c);
 		else if (is_initial(c))
 			return read_symbol((char)c);
-		else if (is_explicit_sign(c))		
-			return read_symbol_or_number((char)c);
+		else if (is_explicit_sign(c) || c == '.')
+			return read_symbol_or_number_or_dot((char)c, dot_ok);
 		else
 			return scm_error("read: unexpected %c", c);
 	}
