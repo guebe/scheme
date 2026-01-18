@@ -4,6 +4,6 @@
 *.plist
 .gdb_history
 scm754
-scm754_debug
-test_read
-fuzz_whitebox
+scm754-debug
+test-read
+fuzz-whitebox

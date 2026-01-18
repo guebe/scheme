@@ -173,14 +173,14 @@ extern scm_obj_t scm_apply(scm_obj_t proc, scm_obj_t args)
 		if (procedure == SCM_PROCEDURE_CAR) return scm_car(scm_car(args));
 		if (procedure == SCM_PROCEDURE_CDR) return scm_cdr(scm_car(args));
 		if (procedure == SCM_PROCEDURE_IS_EQ) return scm_is_eq(scm_car(args), scm_car(scm_cdr(args)));
-		if (procedure == SCM_PROCEDURE_IS_NULL) return scm_is_empty_list(scm_car(args));
-		if (procedure == SCM_PROCEDURE_IS_BOOLEAN) return scm_is_boolean(scm_car(args));
-		if (procedure == SCM_PROCEDURE_IS_EOF_OBJECT) return scm_is_eof_object(scm_car(args));
-		if (procedure == SCM_PROCEDURE_IS_SYMBOL) return scm_is_symbol(scm_car(args));
-		if (procedure == SCM_PROCEDURE_IS_STRING) return scm_is_string(scm_car(args));
-		if (procedure == SCM_PROCEDURE_IS_PAIR) return scm_is_pair(scm_car(args));
-		if (procedure == SCM_PROCEDURE_IS_CHAR) return scm_is_char(scm_car(args));
-		if (procedure == SCM_PROCEDURE_IS_NUMBER) return scm_is_number(scm_car(args));
+		if (procedure == SCM_PROCEDURE_IS_NULL) return scm_boolean(scm_is_empty_list(scm_car(args)));
+		if (procedure == SCM_PROCEDURE_IS_BOOLEAN) return scm_boolean(scm_is_boolean(scm_car(args)));
+		if (procedure == SCM_PROCEDURE_IS_EOF_OBJECT) return scm_boolean(scm_is_eof_object(scm_car(args)));
+		if (procedure == SCM_PROCEDURE_IS_SYMBOL) return scm_boolean(scm_is_symbol(scm_car(args)));
+		if (procedure == SCM_PROCEDURE_IS_STRING) return scm_boolean(scm_is_string(scm_car(args)));
+		if (procedure == SCM_PROCEDURE_IS_PAIR) return scm_boolean(scm_is_pair(scm_car(args)));
+		if (procedure == SCM_PROCEDURE_IS_CHAR) return scm_boolean(scm_is_char(scm_car(args)));
+		if (procedure == SCM_PROCEDURE_IS_NUMBER) return scm_boolean(scm_is_number(scm_car(args)));
 		else return scm_error("unknown procedure");
 	}
 	else if (scm_is_closure(proc)) {
