@@ -53,6 +53,15 @@ extern scm_obj_t scm_define;
 #define SCM_PROCEDURE_WRITE 5
 #define SCM_PROCEDURE_CAR 6
 #define SCM_PROCEDURE_CDR 7
+#define SCM_PROCEDURE_IS_EQ 8
+#define SCM_PROCEDURE_IS_NULL 9
+#define SCM_PROCEDURE_IS_BOOLEAN 10
+#define SCM_PROCEDURE_IS_EOF_OBJECT 11
+#define SCM_PROCEDURE_IS_SYMBOL 12
+#define SCM_PROCEDURE_IS_STRING 13
+#define SCM_PROCEDURE_IS_PAIR 14
+#define SCM_PROCEDURE_IS_CHAR 15
+#define SCM_PROCEDURE_IS_NUMBER 16
 
 /* type predicates */
 static inline _Bool scm_is_empty_list(scm_obj_t obj)   { return (obj & SCM_MASK) == SCM_EMPTY_LIST; }
@@ -67,7 +76,7 @@ static inline _Bool scm_is_string(scm_obj_t obj)       { return (obj & SCM_MASK)
 static inline _Bool scm_is_pair(scm_obj_t obj)         { return (obj & SCM_MASK) == SCM_PAIR; }
 static inline _Bool scm_is_char(scm_obj_t obj)         { return (obj & SCM_MASK) == SCM_CHAR; }
 static inline _Bool scm_is_procedure(scm_obj_t obj)    { return (obj & SCM_MASK) == SCM_PROCEDURE; }
-static inline _Bool scm_is_closure(scm_obj_t obj)       { return (obj & SCM_MASK) == SCM_CLOSURE; }
+static inline _Bool scm_is_closure(scm_obj_t obj)      { return (obj & SCM_MASK) == SCM_CLOSURE; }
 static inline _Bool scm_is_number(scm_obj_t obj)
 {
 	scm_obj_t exp = (obj >> 52) & 0x7FF;
@@ -136,5 +145,6 @@ extern scm_obj_t scm_add(scm_obj_t args);
 extern scm_obj_t scm_sub(scm_obj_t args);
 extern scm_obj_t scm_mul(scm_obj_t args);
 extern scm_obj_t scm_div(scm_obj_t args);
+static inline scm_obj_t scm_is_eq(scm_obj_t obj1, scm_obj_t obj2) { return scm_boolean(obj1 == obj2); }
 
 #endif
